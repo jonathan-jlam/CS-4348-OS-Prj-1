@@ -13,7 +13,7 @@ int toMem[2];
 int toCPU[2];
 
 
-void mem(filename) {
+void mem(char filename[]) {
 
     char message[100];
 	sprintf(message, "Hello from the parent!\n");
@@ -25,9 +25,24 @@ void mem(filename) {
 
     FILE *fp = fopen(filename, "r");
     char line[100];
+	int memory[2000];
+
+	int i = 0;
+	//char *token;
+
     while (fgets(line, 100, fp)) {
-        printf("%s\n", line);
+		//token = strtok(line, " ");
+		//printf("Token: %s\n", token);
+		int instruction = atoi(line);
+		//printf("Token in int: %d\n", instruction);
+		memory[i] = instruction;
+		i++;
     }
+
+	for (int k = 0; k < 10; k++) {
+		printf("%d\n", memory[k]);
+	}
+
 }
 
 
@@ -62,7 +77,7 @@ int main(int argc, char* argv[]) {
 			CPU();
 			break;
 
-        default:          
+        default: ;         
             char filename[100];
             strcpy(filename, argv[1]);
 		    mem(filename);

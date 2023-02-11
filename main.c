@@ -13,7 +13,7 @@ int toMem[2];
 int toCPU[2];
 
 
-void mem() {
+void mem(filename) {
 
     char message[100];
 	sprintf(message, "Hello from the parent!\n");
@@ -22,6 +22,12 @@ void mem() {
 	//char message2[100];
 	read(toMem[0], message, 100);
 	printf("The parent got BACK: %s\n", message);
+
+    FILE *fp = fopen(filename, "r");
+    char line[100];
+    while (fgets(line, 100, fp)) {
+        printf("%s\n", line);
+    }
 }
 
 
@@ -40,13 +46,13 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-/*
+
 	if (argc < 2) {
 		fprintf(stderr, "Improper Usage: <program> <filename>");
 		exit(1);
 	}
-	*/
-/*
+	
+
     switch(fork()) {
         case -1: 
             write(STDERR_FILENO, "Fork failed\n", 12);
@@ -56,31 +62,15 @@ int main(int argc, char* argv[]) {
 			CPU();
 			break;
 
-        default:           
-		   mem();
-			
+        default:          
+            char filename[100];
+            strcpy(filename, argv[1]);
+		    mem(filename);
 			
     }
 
-*/
 
 
-int h = fork();
 
-if (h == -1) {
-	printf("Error with fork.\n");
-	exit(1);
-}
-
-if (h == 0) {
-	printf("child pid: %d", getpid());
-	CPU();
-} else {
-
-	printf("Parent pid: %d", getpid());
-	mem();
-}
-
-printf("reached here: %d\n", getpid());
    
 }

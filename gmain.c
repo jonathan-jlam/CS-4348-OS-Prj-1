@@ -12,14 +12,6 @@
 int toMem[2];
 int toCPU[2];
 
-int memory_violation(int mode, int address) {
-	if (mode && address >=1000) {
-		fprintf(stderr, "Memory violation: accessing system address %d in user mode.\n", address);
-		exit(0);
-	}
-	return 0;
-}
-
 
 void mem(char filename[]) {
 
@@ -90,15 +82,11 @@ void mem(char filename[]) {
 		printf("%d\n", memory[k]);
 	}*/
 	int address;
-	int mode = 1;
 	//wait(NULL);
 	while(read(toMem[0], &address, sizeof(address))) {
 		int instruction;
-
-		memory_violation(mode, address);
 		if (address == -3) {//timer
 			
-			mode = 0;
 			read(toMem[0], &address, sizeof(address));
 			read(toMem[0], &instruction, sizeof(instruction));
 			memory[address] = instruction;
@@ -108,7 +96,7 @@ void mem(char filename[]) {
 			memory[address] = instruction;
 			continue;
 		}
-
+		
 		instruction = memory[address];
 //		printf("Address: %d || Instruction: %d\n", address, instruction);
 		write(toCPU[1], &instruction, sizeof(instruction));
@@ -122,7 +110,6 @@ void mem(char filename[]) {
 			case 2:
 				read(toMem[0], &address, sizeof(address));
 				instruction = memory[address];
-				memory_violation(mode, instruction);
 				instruction = memory[instruction];
 				write(toCPU[1], &instruction, sizeof(instruction));
 				break;
@@ -219,7 +206,6 @@ void mem(char filename[]) {
 				read(toMem[0], &address, sizeof(address));
 				read(toMem[0], &instruction, sizeof(instruction));
 				memory[address] = instruction;
-				mode = 0;
 				break;
 			case 30:
 				read(toMem[0], &address, sizeof(address));
@@ -229,7 +215,6 @@ void mem(char filename[]) {
 				read(toMem[0], &address, sizeof(address));
 				instruction = memory[address]; //sp
 				write(toCPU[1], &instruction, sizeof(instruction));
-				mode = 1;
 				break;
 				
 			case 50:
@@ -273,8 +258,7 @@ void CPU(int timer) {
 
 
 	while(read(toCPU[0], &IR, sizeof(IR))) {
-		
-		int a = 0;
+		int just_switched = 0;
 	//	printf("PC at beg: %d\n", PC);
 		switch(IR) {
 			
@@ -321,7 +305,7 @@ void CPU(int timer) {
 				write(toMem[1], &PC, sizeof(PC));
 				break;
 			case 8:
-				AC = (int) ((rand() % 100) + 1);
+				AC = (int) ((rand() % 99) + 1);
 				break;
 			case 9:
 				PC++;
@@ -443,7 +427,7 @@ void CPU(int timer) {
 				break;
 			case 30:
 				interrupts_enabled = 1;
-				a = 1;
+				just_switched = 1;
 				operand = SP;
 				write(toMem[1], &operand, sizeof(operand));
 				read(toCPU[0], &PC, sizeof(PC));
@@ -475,11 +459,11 @@ void CPU(int timer) {
 	
 
 			PC++;
-			//if (timer_count < timer) {
+			if (timer_count < timer) {
 				timer_count++;
-		//	}
+			}
 
-			if (timer_count >= timer && interrupts_enabled && !a) {
+			if (timer_count == timer && interrupts_enabled && !just_switched) {
 				int temp = -3;
 				write(toMem[1], &temp, sizeof(temp));	
 
@@ -494,15 +478,8 @@ void CPU(int timer) {
 				write(toMem[1], &SP, sizeof(SP));
 				write(toMem[1], &PC, sizeof(PC));
 				PC = 1000;
-				timer_count -= timer;
+				timer_count = 0;
 				interrupts_enabled = 0;
-			}
-
-
-
-			if (interrupts_enabled == 1 && PC >= 1000) {
-				fprintf(stderr, "Memory violation: accessing system address %d in user mode.", PC);
-				exit(0);
 			}
 			write(toMem[1], &PC, sizeof(PC));
 	
@@ -522,7 +499,7 @@ int main(int argc, char* argv[]) {
 
 
 	if (argc < 3) {
-		fprintf(stderr, "Usage: main <filename> <timer>\n");
+		fprintf(stderr, "Improper Usage: <program> <filename>\n");
 		exit(1);
 	}
 	
